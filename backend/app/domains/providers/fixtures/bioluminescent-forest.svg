@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1600" preserveAspectRatio="xMidYMid slice" width="1600" height="1600">
+  <title>Mock fixture: a tiny astronaut in a bioluminescent forest</title>
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#1b3a4b"/>
+      <stop offset="0.55" stop-color="#0b1d2a"/>
+      <stop offset="1" stop-color="#03080d"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#7cffd4" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#7cffd4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowPink" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ff7ce0" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ff7ce0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#06302c"/>
+      <stop offset="1" stop-color="#010d0c"/>
+    </linearGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#05141a"/>
+      <stop offset="0.5" stop-color="#0d2b33"/>
+      <stop offset="1" stop-color="#05141a"/>
+    </linearGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1600" fill="url(#sky)"/>
+
+  <!-- distant trees -->
+  <g fill="#0a2430" opacity="0.8">
+    <rect x="80" y="200" width="70" height="1100" rx="30"/>
+    <rect x="330" y="120" width="50" height="1180" rx="25"/>
+    <rect x="1180" y="160" width="60" height="1140" rx="28"/>
+    <rect x="1420" y="240" width="80" height="1060" rx="36"/>
+  </g>
+
+  <!-- near trees -->
+  <g fill="url(#trunk)">
+    <path d="M160 1600 C190 1100 140 700 230 0 L340 0 C300 700 330 1100 360 1600 Z"/>
+    <path d="M1240 1600 C1270 1150 1230 650 1300 0 L1410 0 C1360 650 1400 1150 1440 1600 Z"/>
+  </g>
+
+  <!-- floating spores -->
+  <g>
+    <circle cx="520" cy="420" r="90" fill="url(#glow)"/>
+    <circle cx="1080" cy="360" r="70" fill="url(#glowPink)"/>
+    <circle cx="760" cy="260" r="40" fill="url(#glow)"/>
+    <circle cx="1320" cy="760" r="60" fill="url(#glow)"/>
+    <circle cx="300" cy="820" r="55" fill="url(#glowPink)"/>
+    <g fill="#c8fff0">
+      <circle cx="520" cy="420" r="6"/><circle cx="1080" cy="360" r="5"/><circle cx="760" cy="260" r="4"/>
+      <circle cx="1320" cy="760" r="5"/><circle cx="300" cy="820" r="5"/><circle cx="640" cy="560" r="3"/>
+      <circle cx="960" cy="520" r="3"/><circle cx="880" cy="180" r="3"/><circle cx="420" cy="300" r="3"/>
+      <circle cx="1200" cy="560" r="3"/><circle cx="1000" cy="680" r="2"/><circle cx="560" cy="700" r="2"/>
+    </g>
+  </g>
+
+  <!-- ground -->
+  <path d="M0 1180 C300 1110 520 1160 800 1130 C1080 1100 1300 1150 1600 1110 L1600 1600 L0 1600 Z" fill="url(#ground)"/>
+
+  <!-- glowing mushrooms -->
+  <g>
+    <ellipse cx="420" cy="1150" rx="160" ry="70" fill="#7cffd4" opacity="0.35" filter="url(#blur)"/>
+    <rect x="404" y="1060" width="30" height="110" rx="12" fill="#bdfdf0"/>
+    <path d="M330 1075 C340 990 500 990 510 1075 Z" fill="#7cffd4"/>
+    <rect x="480" y="1110" width="18" height="60" rx="8" fill="#bdfdf0"/>
+    <path d="M440 1118 C446 1072 532 1072 538 1118 Z" fill="#43e6c0"/>
+
+    <ellipse cx="1150" cy="1140" rx="170" ry="70" fill="#ff7ce0" opacity="0.3" filter="url(#blur)"/>
+    <rect x="1130" y="1040" width="34" height="120" rx="14" fill="#ffd9f5"/>
+    <path d="M1050 1058 C1060 965 1236 965 1246 1058 Z" fill="#ff7ce0"/>
+    <rect x="1230" y="1100" width="18" height="60" rx="8" fill="#ffd9f5"/>
+    <path d="M1196 1108 C1202 1064 1278 1064 1284 1108 Z" fill="#e64fc2"/>
+  </g>
+
+  <!-- ferns -->
+  <g stroke="#1fd1a5" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.8">
+    <path d="M620 1200 C600 1100 560 1040 500 1000"/>
+    <path d="M640 1200 C660 1090 700 1030 760 990"/>
+    <path d="M980 1190 C960 1100 930 1050 880 1020"/>
+    <path d="M1000 1190 C1030 1110 1060 1060 1110 1030"/>
+  </g>
+
+  <!-- tiny astronaut -->
+  <g transform="translate(800 1040)">
+    <ellipse cx="0" cy="120" rx="110" ry="22" fill="#000" opacity="0.45"/>
+    <circle cx="0" cy="0" r="130" fill="url(#glow)" opacity="0.35"/>
+    <!-- backpack -->
+    <rect x="-58" y="-10" width="116" height="100" rx="22" fill="#b9c6cf"/>
+    <!-- body -->
+    <rect x="-48" y="0" width="96" height="104" rx="34" fill="#f2f5f7"/>
+    <!-- legs -->
+    <rect x="-40" y="80" width="32" height="40" rx="12" fill="#e3e9ed"/>
+    <rect x="8" y="80" width="32" height="40" rx="12" fill="#e3e9ed"/>
+    <!-- arm reaching to a spore -->
+    <rect x="34" y="14" width="70" height="26" rx="13" fill="#e3e9ed" transform="rotate(-35 34 27)"/>
+    <circle cx="104" cy="-36" r="10" fill="#c8fff0"/>
+    <circle cx="104" cy="-36" r="34" fill="url(#glow)"/>
+    <!-- helmet -->
+    <circle cx="0" cy="-46" r="58" fill="#f2f5f7"/>
+    <ellipse cx="6" cy="-46" rx="40" ry="34" fill="#0b2a36"/>
+    <ellipse cx="18" cy="-58" rx="14" ry="9" fill="#7cffd4" opacity="0.7"/>
+    <!-- chest light -->
+    <rect x="-16" y="30" width="32" height="18" rx="5" fill="#7cffd4" opacity="0.85"/>
+  </g>
+</svg>
