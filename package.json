@@ -1,0 +1,25 @@
+{
+  "name": "create-image",
+  "private": true,
+  "description": "Pika take-home: Create Image app (React + Vite frontend, FastAPI backend, mocked async model)",
+  "scripts": {
+    "setup": "npm --prefix frontend install && uv --directory backend sync",
+    "dev": "node scripts/run-both.mjs dev",
+    "dev:api": "uv --directory backend run uvicorn --factory app.main:create_app --reload --reload-dir app --host 127.0.0.1 --port 8000 --timeout-graceful-shutdown 3",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "node scripts/run-both.mjs start",
+    "start:api": "uv --directory backend run uvicorn --factory app.main:create_app --host 127.0.0.1 --port 8000 --timeout-graceful-shutdown 3",
+    "start:web": "npm --prefix frontend run preview",
+    "test": "npm run test:api && npm run test:web",
+    "test:api": "uv --directory backend run pytest",
+    "test:web": "npm --prefix frontend test",
+    "test:e2e": "npm --prefix e2e test",
+    "reset-data": "node scripts/reset-data.mjs",
+    "check-links": "node scripts/check-links.mjs",
+    "setup:e2e": "npm --prefix e2e install && npm --prefix e2e run install-browser"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

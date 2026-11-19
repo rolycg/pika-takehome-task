@@ -1,0 +1,21 @@
+# dependencies / builds
+node_modules/
+frontend/dist/
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# local runtime data (history DB + generated assets)
+data/*
+!data/.gitkeep
+
+# misc
+.DS_Store
+.context/
+*.log
+
+# e2e artifacts
+e2e/.data/
+e2e/test-results/
+e2e/playwright-report/
