@@ -52,7 +52,7 @@ One deployable codebase runs in two process roles: **API** (HTTP, SSE, webhooks)
 
 **Why a modular monolith.** Job, asset, credit and outbox state must change atomically; one database is simpler and safer than coordinating those writes across services.
 
-Module ownership mirrors the domain-first layout of the submitted code. Each module owns its tables, and other modules use it only through its public interface:
+Module ownership mirrors the domain-first layout of the submitted code (§8). Each module owns its tables, and other modules use it only through its public interface:
 
 | Module | Owns | Surfaces |
 |---|---|---|
@@ -185,3 +185,18 @@ The Runtime only knows these interfaces. Adding an App means a new module, a man
 - **Retention:** keep failed-job inputs and deleted Assets for 30 days; minimize and access-log raw provider payloads.
 - **Cost controls:** show Generate cost, monitor spend per App/provider and prefer cheaper providers when quality permits.
 - **Rollout:** feature flags, internal testing, closed beta, then GA. Shadow each new provider before routing real traffic.
+
+## 8. The submitted code as a reference
+
+The local Create Image app is not what we would deploy, but several of its patterns set the boundaries in this design:
+
+- **Compare-and-set transitions.** `repository.transition()` checks moves against `ALLOWED_TRANSITIONS` and updates `WHERE id = ? AND status = ?`; only the worker and recovery call it. This becomes the §5 ownership table, and it is why stale completions are never attached.
+- **Database-enforced active limit.** A partial unique index allows one active generation per owner. It generalizes to per-workspace plan limits via the quota row.
+- **Idempotency per click.** Keys are unique per `(owner_id, key)`; a replay returns the original, and different inputs are rejected. Job create keeps both rules on `(workspace_id, idempotency_key)`.
+- **Assets only through the success transition.** A worker that loses the CAS removes the file it wrote, so stale output never surfaces as an asset. Production keeps that boundary but retains such output for audit.
+- **Provider as an event stream.** `ImageProvider.run()` yields `Started`, `Completed` and `Failed`. This is the §6 adapter contract, plus `poll`, webhooks and `cancel`.
+- **Publish after commit, resync on connect.** The outbox, Redis and SSE keep this contract across API nodes.
+- **Recovery with an attempts cap.** This grows into leases and the reconciler.
+- **Domain-first ownership.** Domains own their tables behind a public module, as the §2 modules do.
+
+Some parts deliberately do not carry over: the in-memory event bus (process-local), the in-process worker (replaced by a leased pool), SQLite (single writer), and re-running interrupted work. Re-running is fine locally because the mock's work dies with the process; with paid providers the reconciler re-attaches by `external_id` instead of paying twice.
