@@ -87,7 +87,7 @@ erDiagram
 - **App / AppVersion.** A versioned manifest holds the input schema, output kinds, provider capability and cost formula. Jobs pin a version so history remains meaningful after changes.
 - **Project.** The user-facing container. Every Job has a `project_id`; starting without one creates "Untitled Project #n".
 - **Job.** One user action: validated inputs, idempotency key, status, reserved credits and timestamps.
-- **ProviderOperation.** One provider attempt, including external id, idempotency key, status, lease, deadline and raw error. Exactly one operation per Job may be current.
+- **ProviderOperation.** One provider attempt for one output slot of a Job, including slot, external id, idempotency key, status, lease, deadline and raw error. A Job has one or more slots (from the App's `plan`), and each slot has exactly one *current* operation; older operations for that slot are earlier attempts.
 - **Asset.** An immutable output with storage key, media metadata, `job_id`, `project_id` and lineage.
 - **Element.** A named Character, Product, Scene, Brand or Style backed by Assets and structured attributes.
 
@@ -111,12 +111,12 @@ sequenceDiagram
   P-->>W: external_id
   W->>DB: op=running, job=processing
   P-->>API: webhook(external_id, result)
-  API->>DB: verify op is current → upload result → tx: assets + job=succeeded + settle credits + outbox
+  API->>DB: verify current slot → store result → if all slots complete: tx finalize assets + succeed job + settle credits + outbox
   DB-->>U: SSE job.updated (via outbox relay → Redis → API)
 ```
 
 1. **Start in an App.** The user picks inputs (optionally Elements) and clicks Generate. The client sends one Idempotency-Key per click. The API validates against the AppVersion schema, checks quotas, reserves credits and creates a `queued` Job, all in one transaction. It returns `202` straight away.
-2. **Async execution.** A worker claims the job and runs the App handler's `plan(inputs)`, which yields one provider request per required output. It then creates ProviderOperations and submits them.
+2. **Async execution.** A worker claims the job and runs the App handler's `plan(inputs)`, which yields one provider request per output slot. It then creates one ProviderOperation per slot and submits them. The Job succeeds once every slot's current operation has completed; `finalize` then turns the results into Assets inside the completion transaction. In v1, a terminal failure in any slot fails the whole Job and releases its credits.
 3. **Jobs tracking.** Every state change writes an outbox row in the same transaction. A relay publishes those rows to Redis, and API nodes push them over SSE. The Jobs page and any open App update live. A reconnecting client re-fetches a snapshot, so a missed event never leaves it stale.
 4. **Continue in Projects.** Finished Assets belong to the Job's Project. The completion transaction updates `last_activity_at` for Home's Continue Working. Edit or re-run starts a new Job linked through `derived_from`.
 5. **Find in Library.** The Assets are already there, grouped under the project.
@@ -132,7 +132,7 @@ sequenceDiagram
 |---|---|---|
 | — | queued | API (create) |
 | queued | processing | Worker (claim + submit) |
-| processing | succeeded / failed | Worker or webhook handler, only via the *current* operation |
+| processing | succeeded / failed | Worker or webhook handler, only via each slot's *current* operation |
 | queued / processing | cancel_requested → cancelled | API requests; worker confirms |
 | processing | queued | Reconciler (lease expired, retry budget left) |
 
@@ -140,7 +140,7 @@ Every transition is a compare-and-set: `UPDATE … SET status=$to, version=versi
 
 **Idempotency.**
 - *Client to API:* `(workspace_id, idempotency_key)` is unique, and a replay returns the original Job.
-- *Worker to provider:* each operation sends its own key (`job_id:attempt`) wherever the provider supports one.
+- *Worker to provider:* each operation sends its own key (`job_id:slot:attempt`) wherever the provider supports one.
 - *Webhooks:* deduplicated on `(provider, external_id, event_type)`.
 
 **Retries and timeouts.** Errors are classified by each adapter as *retryable* (429, 5xx, network) or *terminal* (content rejected, invalid input). Retryable errors get a new operation with exponential backoff and jitter, up to N attempts. Deadlines depend on the capability: about 2 minutes for images and about 30 minutes for video. While the provider reports progress, video operations are polled at a slow backoff in addition to the webhook. A missed deadline cancels the provider operation where possible and either retries or fails the Job.
@@ -185,4 +185,3 @@ The Runtime only knows these interfaces. Adding an App means a new module, a man
 - **Retention:** keep failed-job inputs and deleted Assets for 30 days; minimize and access-log raw provider payloads.
 - **Cost controls:** show Generate cost, monitor spend per App/provider and prefer cheaper providers when quality permits.
 - **Rollout:** feature flags, internal testing, closed beta, then GA. Shadow each new provider before routing real traffic.
-

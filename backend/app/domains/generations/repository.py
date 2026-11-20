@@ -66,7 +66,7 @@ class GenerationRepository:
         now = utc_now()
         with self._db.transaction() as conn:
             if idempotency_key is not None:
-                existing = self._get_by_key(conn, idempotency_key)
+                existing = self._get_by_key(conn, owner_id, idempotency_key)
                 if existing is not None:
                     same_inputs = (existing.prompt, existing.aspect_ratio, existing.style) == (
                         prompt, aspect_ratio, style)
@@ -180,8 +180,10 @@ class GenerationRepository:
     # --- helpers --------------------------------------------------------------------------
 
     @staticmethod
-    def _get_by_key(conn: sqlite3.Connection, key: str) -> Generation | None:
-        row = conn.execute("SELECT * FROM generations WHERE idempotency_key = ?", (key,)).fetchone()
+    def _get_by_key(conn: sqlite3.Connection, owner_id: str, key: str) -> Generation | None:
+        row = conn.execute(
+            "SELECT * FROM generations WHERE owner_id = ? AND idempotency_key = ?", (owner_id, key)
+        ).fetchone()
         return Generation.from_row(row) if row else None
 
     @staticmethod
