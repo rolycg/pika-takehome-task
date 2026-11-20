@@ -4,11 +4,15 @@ import asyncio
 
 import pytest
 
+from app.domains.assets.store import AssetStore
 from app.domains.generations.models import AspectRatio, Status, Style
 from app.domains.generations.recovery import recover_interrupted
 from app.domains.generations.repository import GenerationRepository, IllegalTransition
+from app.domains.generations.worker import GenerationWorker
+from app.domains.providers.base import Completed, Started
 from app.main import create_app
 from app.platform.db import Database
+from app.platform.events import EventBus
 from conftest import make_settings, wait_until
 
 
@@ -137,3 +141,36 @@ async def test_provider_timeout_fails_generation(tmp_path) -> None:
         app.state.worker._wake.set()
         await wait_until(lambda: repo.get(g.id).status == Status.FAILED)
         assert "Timed out" in repo.get(g.id).error
+
+
+async def test_asset_is_removed_when_worker_loses_the_success_transition(settings) -> None:
+    repo = make_repo(settings)
+    assets = AssetStore(settings.assets_dir)
+    g = seed(repo, "raced")
+
+    class RacedProvider:
+        async def run(self, request):
+            yield Started()
+            # Someone else finishes the generation while the provider is still working.
+            repo.transition(g.id, expected=Status.PROCESSING, to=Status.FAILED, error="moved elsewhere")
+            yield Completed(content=b"<svg/>", media_type="image/svg+xml", extension="svg")
+
+    worker = GenerationWorker(repo=repo, providers={"mock": RacedProvider()}, assets=assets,
+                              bus=EventBus(), wake=asyncio.Event(), provider_timeout_s=5)
+    await worker.process(repo.get(g.id))
+
+    assert repo.get(g.id).status == Status.FAILED
+    assert repo.get(g.id).asset_key is None
+    assert assets.find(g.id) is None
+
+
+def test_idempotency_keys_are_scoped_per_owner(settings) -> None:
+    repo = make_repo(settings)
+    inputs = dict(prompt="same", aspect_ratio=AspectRatio.SQUARE, style=Style.ILLUSTRATION, provider="mock",
+                  idempotency_key="click-1")
+    a, created_a = repo.create(**inputs, owner_id="owner-a")
+    b, created_b = repo.create(**inputs, owner_id="owner-b")
+    replay, created_replay = repo.create(**inputs, owner_id="owner-a")
+    assert created_a and created_b and not created_replay
+    assert a.id != b.id
+    assert replay.id == a.id

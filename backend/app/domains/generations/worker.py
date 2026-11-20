@@ -105,8 +105,10 @@ class GenerationWorker:
                                 self._fail(generation.id, current, "Provider completed without starting.")
                                 return
                             key = self._assets.save(generation.id, content, extension)
-                            self._move(generation.id, current, Status.SUCCEEDED,
-                                       asset_key=key, completed_at=utc_now())
+                            updated = self._move(generation.id, current, Status.SUCCEEDED,
+                                                 asset_key=key, completed_at=utc_now())
+                            if updated is None:
+                                self._discard_unowned_asset(generation.id, key)
                             return
                         case Failed(reason=reason):
                             self._fail(generation.id, current, reason)
@@ -124,6 +126,13 @@ class GenerationWorker:
         else:
             publish_generation(self._bus, updated)
         return updated
+
+    def _discard_unowned_asset(self, generation_id: str, key: str) -> None:
+        """We wrote the file but lost the race to mark the generation succeeded. Remove the file
+        unless the row that won already points at the same key (keys derive from the id)."""
+        current = self._repo.get(generation_id)
+        if current is None or current.asset_key != key:
+            self._assets.delete(key)
 
     def _fail(self, generation_id: str, expected: Status, reason: str) -> None:
         updated = self._repo.transition(

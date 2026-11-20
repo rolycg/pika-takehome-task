@@ -39,3 +39,10 @@ class AssetStore:
             if path.is_file():
                 return StoredAsset(path=path, media_type=media_type)
         return None
+
+    def delete(self, key: str) -> None:
+        """Remove a stored asset by the key `save` returned. Missing files are ignored."""
+        owner_id, _, extension = key.rpartition(".")
+        if not _SAFE_ID.match(owner_id) or extension not in _MEDIA_TYPES:
+            raise ValueError("unsafe asset key")
+        (self.root / key).unlink(missing_ok=True)

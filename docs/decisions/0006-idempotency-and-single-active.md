@@ -7,10 +7,12 @@
 
 ## Decision
 - The UI generates a `crypto.randomUUID()` per Generate click and sends it as `Idempotency-Key`. The same key with the same inputs returns the original record (200); the same key with different inputs → 422 `idempotency_key_reused`.
+- Keys are scoped per owner: `CREATE UNIQUE INDEX ux_generations_owner_idempotency ON generations(owner_id, idempotency_key)`, and lookups filter by `owner_id`. One user's key can never replay another user's generation.
 - The Generate button is also disabled while submitting and while anything is queued or processing (a UX layer, not the guarantee).
 - The **database** guarantees one active generation: `CREATE UNIQUE INDEX ux_generations_one_active ON generations(owner_id) WHERE status IN ('queued','processing')`. The service checks first and returns 409 `generation_active` with the active id.
-- `owner_id` defaults to `local-user`, so the rule is already per-user when auth arrives.
+- `owner_id` defaults to `local-user`, so both rules are already per-user when auth arrives.
 
 ## Consequences
 - Double-clicks, React StrictMode double effects and network retries can't create duplicates.
 - Two tabs can't run two generations at once.
+- A database created before keys were scoped per owner still has the old column-level `UNIQUE` on `idempotency_key`. It is stricter (global) and harmless with one local user; `npm run reset-data` recreates the table with the per-owner index. There is no migration framework.
